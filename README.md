@@ -25,8 +25,6 @@ Pour cette fonctionnalité, la première étape est d'utiliser un modèle pré-e
 
 ![Segmentation vestimentaire](assets/images/screenshot_segmentation.png)
 
-*(Remplace le chemin par celui de ton screenshot dans le dossier du projet)*
-
 ---
 
 ## Technologies utilisées
