@@ -1,0 +1,14 @@
+{
+  "image_0.png": {
+    "label": "robe",
+    "bbox": [50, 30, 150, 200]
+  },
+  "image_15.png": {
+    "label": "chaussures",
+    "bbox": [20, 40, 100, 120]
+  },
+  "image_29.png": {
+    "label": "sac",
+    "bbox": [60, 70, 160, 180]
+  }
+}
