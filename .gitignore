@@ -1,2 +1,43 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environments
 .env
-.env
+venv/
+env/
+.venv/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# MacOS files
+.DS_Store
+
+# Logs and databases
+*.log
+*.sqlite3
+
+# Pytest cache
+.pytest_cache/
+
+# Coverage reports
+htmlcov/
+.coverage
+
+# VSCode settings
+.vscode/
+
+# Anaconda environments
+.anaconda/
+
+# Images temporaires ou de tests non suivies
+assets/images/screenshot_segmentation.png
+
+# Autres fichiers personnels / IDE
+.idea/
+*.swp
+
+# Dossier public non suivi (si besoin)
+public/
