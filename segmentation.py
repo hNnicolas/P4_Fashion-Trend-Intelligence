@@ -1,134 +1,128 @@
 import os
 import io
-import json
 import base64
-from PIL import Image
 import requests
-import matplotlib.pyplot as plt
+from dotenv import load_dotenv
+from PIL import Image
 import numpy as np
+import matplotlib.pyplot as plt
 
-# --- Configuration ---
-
-# Dossier des images et annotations
-IMAGES_DIR = "assets/images"
-ANNOTATIONS_FILE = "assets/images/annotations.json"
-
-# Modèle HF à utiliser
+load_dotenv()
+API_TOKEN = os.getenv("HUGGINGFACE_API_TOKEN")
 MODEL_ID = "sayeed99/segformer_b3_clothes"
 
-# Taille max des images pour optimiser la requête
+IMAGES_DIR = "assets/images"
 MAX_IMAGE_SIZE = 512
 
-# --- Fonctions utilitaires ---
+# Liste des classes dans l'ordre correspondant à l'API
+CLASSES = [
+    "background", "hat", "hair", "sunglasses", "upper-clothes", "dress",
+    "coat", "socks", "pants", "gloves", "scarf", "skirt", "face",
+    "left-arm", "right-arm", "left-leg", "right-leg", "left-shoe", "right-shoe"
+]
 
-def load_and_resize_image(path, max_size=MAX_IMAGE_SIZE):
-    """Charge une image, la convertit en RGB et la redimensionne."""
+# Palette RGB par classe
+PALETTE = [
+    [0, 0, 0], [128, 0, 0], [255, 0, 0], [0, 85, 0], [170, 0, 51],
+    [255, 85, 0], [0, 0, 85], [0, 119, 221], [85, 85, 0], [0, 85, 85],
+    [85, 51, 0], [52, 86, 128], [0, 128, 0], [0, 0, 255], [85, 255, 170],
+    [170, 255, 85], [255, 255, 0], [255, 170, 0], [255, 0, 255]
+]
+
+def load_and_resize_image(path):
     img = Image.open(path).convert("RGB")
-    img.thumbnail((max_size, max_size))
+    img.thumbnail((MAX_IMAGE_SIZE, MAX_IMAGE_SIZE))
     return img
 
-def call_hf_api(image: Image.Image, api_token: str):
-    """
-    Envoie une image à l'API Hugging Face et récupère la segmentation.
-    """
-    # Convertir l'image en bytes PNG
+def call_hf_api(image: Image.Image):
     buffered = io.BytesIO()
     image.save(buffered, format="PNG")
     image_bytes = buffered.getvalue()
 
     headers = {
-        "Authorization": f"Bearer {api_token}",
+        "Authorization": f"Bearer {API_TOKEN}",
         "Content-Type": "application/octet-stream"
     }
-    
-    api_url = f"https://api-inference.huggingface.co/models/{MODEL_ID}"
 
-    response = requests.post(api_url, headers=headers, data=image_bytes)
-    
-    # Vérification du statut HTTP
+    url = f"https://api-inference.huggingface.co/models/{MODEL_ID}"
+    response = requests.post(url, headers=headers, data=image_bytes)
+
     if response.status_code == 200:
         return response.json()
     else:
-        raise Exception(f"Erreur HTTP {response.status_code} : {response.text}")
+        raise Exception(f"Erreur API {response.status_code}: {response.text}")
 
-def display_segmentation_mask(mask_base64):
-    """Décode et affiche le masque de segmentation encodé en base64."""
-    # Décoder la chaîne base64 en bytes
+def decode_mask(mask_base64):
     mask_bytes = base64.b64decode(mask_base64)
-    # Charger l'image depuis ces bytes
-    mask_img = Image.open(io.BytesIO(mask_bytes))
-    # Afficher l'image du masque
-    plt.imshow(mask_img)
-    plt.title("Carte de segmentation")
-    plt.axis("off")
-    plt.show()
+    mask_img = Image.open(io.BytesIO(mask_bytes)).convert("L")  # niveaux de gris
+    mask_arr = np.array(mask_img)
+    # Convertir pixels non nuls en 1 (masque binaire)
+    mask_bin = (mask_arr > 0).astype(np.uint8)
+    return mask_bin
 
-# --- Script principal ---
+def build_color_mask(api_result, shape):
+    # Initialiser le masque final avec des zéros (background)
+    final_mask = np.zeros(shape, dtype=np.uint8)
+    for obj in api_result:
+        label_name = obj.get("label", "").lower()
+        if label_name in [c.lower() for c in CLASSES]:
+            label_index = [c.lower() for c in CLASSES].index(label_name)
+            mask_bin = decode_mask(obj["mask"])
+            # On applique le label_index partout où le masque binaire est à 1
+            final_mask[mask_bin == 1] = label_index
+    return final_mask
+
+def apply_palette(mask_array):
+    color_mask = np.zeros((mask_array.shape[0], mask_array.shape[1], 3), dtype=np.uint8)
+    for label_index in np.unique(mask_array):
+        if label_index < len(PALETTE):
+            color_mask[mask_array == label_index] = PALETTE[label_index]
+    return color_mask
+
+def show_segmentation(image, color_mask, detected_labels):
+    fig, axs = plt.subplots(1, 2, figsize=(12, 6))
+    axs[0].imshow(image)
+    axs[0].set_title("Image originale")
+    axs[0].axis("off")
+
+    axs[1].imshow(color_mask)
+    axs[1].set_title("Masque colorisé")
+    axs[1].axis("off")
+
+    plt.tight_layout()
+    plt.show()
+    plt.close()  
+
+    print("\n🧵 Légende détectée :")
+    for label in detected_labels:
+        print(f"  - {label}")
 
 def main():
-    print(f"Répertoire courant : {os.getcwd()}")
-
-    # Vérification des images
-    if not os.path.isdir(IMAGES_DIR):
-        print(f"Erreur : dossier '{IMAGES_DIR}' introuvable.")
-        return
-    
-    images = [f for f in os.listdir(IMAGES_DIR) if f.endswith(".png")]
+    images = [f for f in os.listdir(IMAGES_DIR) if f.lower().endswith(".png")]
     if not images:
-        print("Aucune image PNG trouvée dans le dossier.")
+        print("❌ Aucune image PNG trouvée dans", IMAGES_DIR)
         return
-    
-    print(f"Images trouvées ({len(images)}):")
-    for img in images:
-        print(" -", img)
 
-    # Chargement annotations (optionnel)
-    if os.path.exists(ANNOTATIONS_FILE):
-        with open(ANNOTATIONS_FILE, "r") as f:
-            annotations = json.load(f)
-        print("Annotations chargées.")
-    else:
-        annotations = {}
-        print("Aucune annotation chargée.")
-    
-    # Prendre la première image
-    first_img = images[0]
-    img_path = os.path.join(IMAGES_DIR, first_img)
+    for image_name in images:
+        print(f"\n📸 Traitement de : {image_name}")
+        img_path = os.path.join(IMAGES_DIR, image_name)
+        img = load_and_resize_image(img_path)
 
-    # Charger et afficher l'image
-    img = load_and_resize_image(img_path)
-    plt.imshow(img)
-    plt.title(f"Image : {first_img}")
-    plt.axis("off")
-    plt.show()
+        try:
+            result = call_hf_api(img)
 
-    # Afficher annotations si présentes
-    if first_img in annotations:
-        print("Annotations :", annotations[first_img])
-    else:
-        print("Aucune annotation pour cette image.")
+            if isinstance(result, list) and len(result) > 0 and "mask" in result[0]:
+                final_mask = build_color_mask(result, (img.height, img.width))
+                color_mask = apply_palette(final_mask)
 
-    # Récupérer token API depuis variable d'environnement
-    api_token = os.getenv("HUGGINGFACE_API_TOKEN")
+                detected_labels = [obj["label"] for obj in result]
+                show_segmentation(img, color_mask, detected_labels)
 
-    if not api_token:
-        print("Erreur : variable HUGGINGFACE_API_TOKEN non définie ou vide")
-        return
-    print(f"Token lu (10 premiers caractères) : {api_token[:10]}")  # affiche partiellement le token
+            else:
+                print("Réponse API inattendue :", result)
 
-    print(f"Envoi de l'image '{img_path}' à l'API...")
-
-    # Appel API Hugging Face
-    try:
-        result = call_hf_api(img, api_token)
-        print("Résultat reçu de l'API.")
-        # L'API renvoie une liste avec un ou plusieurs résultats, on prend le premier
-        if isinstance(result, list) and "mask" in result[0]:
-            display_segmentation_mask(result[0]["mask"])
-        else:
-            print(json.dumps(result, indent=2))
-    except Exception as e:
-        print("Erreur lors de l'appel API :", e)
+        except Exception as e:
+            print("❌ Erreur:", e)
 
 if __name__ == "__main__":
     main()
