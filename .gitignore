@@ -39,5 +39,3 @@ assets/images/screenshot_segmentation.png
 .idea/
 *.swp
 
-# Dossier public non suivi (si besoin)
-public/
