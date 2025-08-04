@@ -23,7 +23,7 @@ Mais ne t'inquiète pas, ton rôle sera de travailler sur la première fonctionn
 
 Pour cette fonctionnalité, la première étape est d'utiliser un modèle pré-entraîné capable d'identifier les différentes pièces vestimentaires dans une photo, comme illustré ci-dessous.
 
-![Segmentation vestimentaire](public/images/screenshot_fashiontrend.png)
+![Segmentation vestimentaire](public/images/screenshot_segmentation.png)
 
 ---
 
