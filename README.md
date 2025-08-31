@@ -6,16 +6,13 @@
 
 Bonjour,
 
-Merci pour ton attention lors de la présentation du projet **Fashion Trend Intelligence**. Je voulais, dans ce document, te faire un récapitulatif de la mission.
+**Fashion Trend Intelligence**. 
 
-Comme tu l'as compris, l'objectif global est de concevoir, développer et déployer un système d'analyse disposant des fonctionnalités suivantes :
+Concevoir, développer et déployer un système d'analyse disposant des fonctionnalités suivantes :
 
-- **Segmentation vestimentaire** : être capable d'identifier et d'isoler avec précision chaque pièce vestimentaire dans une image.
-- **Analyse stylistique** : classifier les pièces selon leur nature, couleur, texture et style.
-- **Agrégation de tendances** : compiler ces données sur des milliers de publications pour identifier les tendances émergentes.
-
-Comme tu peux le voir, ce projet est ambitieux et présente plusieurs challenges !  
-Mais ne t'inquiète pas, ton rôle sera de travailler sur la première fonctionnalité, la **Segmentation vestimentaire**.
+- **Segmentation vestimentaire** : identification et d'isolement avec précision de chaque pièce vestimentaire dans une image.
+- **Analyse stylistique** : classification des pièces selon leur nature, couleur, texture et style.
+- **Agrégation de tendances** : compilation ces données sur des milliers de publications pour identifier les tendances émergentes.
 
 ---
 
