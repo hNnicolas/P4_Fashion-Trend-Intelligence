@@ -4,10 +4,6 @@
 
 ## Présentation du projet
 
-Bonjour,
-
-**Fashion Trend Intelligence**. 
-
 Concevoir, développer et déployer un système d'analyse disposant des fonctionnalités suivantes :
 
 - **Segmentation vestimentaire** : identification et d'isolement avec précision de chaque pièce vestimentaire dans une image.
